@@ -320,24 +320,23 @@ defmodule Contex.PointPlot do
 
     plot_options = Map.merge(@default_plot_options, plot_options)
 
-    x_axis_svg =
+    x_axis =
       if plot_options.show_x_axis,
-        do:
-          get_x_axis(x_scale, plot)
-          |> Axis.to_svg(),
+        do: get_x_axis(x_scale, plot),
         else: ""
 
-    y_axis_svg =
+    y_axis =
       if plot_options.show_y_axis,
         do:
           Axis.new_left_axis(y_scale)
-          |> Axis.set_offset(get_option(plot, :width))
-          |> Axis.to_svg(),
+          |> Axis.set_offset(get_option(plot, :width)),
         else: ""
 
     [
-      x_axis_svg,
-      y_axis_svg,
+      Axis.to_svg(x_axis),
+      Axis.to_svg(y_axis),
+      Axis.gridlines_to_svg(x_axis),
+      Axis.gridlines_to_svg(y_axis),
       "<g>",
       get_svg_points(plot),
       "</g>"
