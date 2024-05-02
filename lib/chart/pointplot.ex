@@ -38,7 +38,8 @@ defmodule Contex.PointPlot do
   @required_mappings [
     x_col: :exactly_one,
     y_cols: :one_or_more,
-    fill_col: :zero_or_one
+    fill_col: :zero_or_one,
+    id_col: :zero_or_one
   ]
 
   @default_options [
@@ -49,6 +50,8 @@ defmodule Contex.PointPlot do
     custom_y_formatter: nil,
     width: 100,
     height: 100,
+    phx_event_handler: nil,
+    phx_event_target: nil,
     colour_palette: :default
   ]
 
@@ -366,7 +369,7 @@ defmodule Contex.PointPlot do
          %PointPlot{
            mapping: %{accessors: accessors},
            transforms: transforms
-         },
+         } = plot,
          row
        ) do
     x =
@@ -374,6 +377,8 @@ defmodule Contex.PointPlot do
       |> transforms.x.()
 
     fill_val = accessors.fill_col.(row)
+
+    id = accessors.id_col.(row)
 
     Enum.with_index(accessors.y_cols)
     |> Enum.map(fn {accessor, index} ->
@@ -386,16 +391,30 @@ defmodule Contex.PointPlot do
         _ ->
           y = transforms.y.(val)
           fill = transforms.colour.(index, fill_val)
-          get_svg_point(x, y, fill)
+
+          base_opts = [class: "exc-pointplot-point", fill: fill, id: id]
+
+          get_svg_point(x, y, base_opts ++ get_point_event_handlers(plot))
       end
     end)
   end
 
-  defp get_svg_point(x, y, fill) when is_number(x) and is_number(y) do
-    circle(x, y, 3, fill: fill)
+  defp get_svg_point(x, y, opts) when is_number(x) and is_number(y) do
+    circle(x, y, 10, opts)
   end
 
-  defp get_svg_point(_x, _y, _fill), do: ""
+  defp get_svg_point(_x, _y, _fill, _id), do: ""
+
+  defp get_point_event_handlers(%PointPlot{} = plot) do
+    handler = get_option(plot, :phx_event_handler)
+    target = get_option(plot, :phx_event_target)
+
+    case target do
+      nil -> [phx_click: handler]
+      "" -> [phx_click: handler]
+      _ -> [phx_click: handler, phx_target: target]
+    end
+  end
 
   @doc false
   def prepare_scales(%PointPlot{} = plot) do
