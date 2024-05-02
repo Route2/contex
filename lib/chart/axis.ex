@@ -154,7 +154,7 @@ defmodule Contex.Axis do
     location = location + 0.5
 
     [
-      ~s|<line class="exc-grid" stroke-dasharray="3,3"|,
+      ~s|<line class="exc-grid"|,
       ~s| #{dim_constant}1="#{location}" #{dim_constant}2="#{location}"|,
       ~s| #{dim_length}1="0" #{dim_length}2="#{offset}"></line>|
     ]
