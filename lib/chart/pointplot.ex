@@ -31,6 +31,7 @@ defmodule Contex.PointPlot do
     :x_scale,
     :y_scale,
     :legend_scale,
+    :select_item,
     transforms: %{},
     colour_palette: :default
   ]
@@ -52,7 +53,8 @@ defmodule Contex.PointPlot do
     height: 100,
     phx_event_handler: nil,
     phx_event_target: nil,
-    colour_palette: :default
+    colour_palette: :default,
+    select_item: nil
   ]
 
   @default_plot_options %{
@@ -378,6 +380,7 @@ defmodule Contex.PointPlot do
     fill_val = accessors.fill_col.(row)
 
     id = accessors.id_col.(row)
+    selected? = id == get_option(plot, :select_item)
 
     Enum.with_index(accessors.y_cols)
     |> Enum.map(fn {accessor, index} ->
@@ -389,7 +392,7 @@ defmodule Contex.PointPlot do
 
         _ ->
           y = transforms.y.(val)
-          fill = transforms.colour.(index, fill_val)
+          fill = if selected?, do: "2563EB", else: transforms.colour.(index, fill_val)
 
           base_opts = [class: "exc-pointplot-point", fill: fill, id: id]
 
