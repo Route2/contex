@@ -45,8 +45,9 @@ defmodule Contex.Bridge do
   ]
 
   @required_mappings [
-    category_col: :exactly_one,
-    value_cols: :one_or_more
+     category_col: :exactly_one,
+     type_col: :exactly_one,
+     value_cols: :one_or_more
   ]
 
   @default_options [
@@ -426,6 +427,7 @@ defmodule Contex.Bridge do
          fills
        ) do
     cat_data = mapping.accessors.category_col.(row)
+    bar_type = mapping.accessors.type_col.(row)
     series_values = Enum.map(mapping.accessors.value_cols, fn value_col -> value_col.(row) end)
 
     cat_band = OrdinalScale.get_band(category_scale, cat_data)
@@ -437,8 +439,16 @@ defmodule Contex.Bridge do
     y_increase =
       bar_values
       |> Enum.reduce(start, fn {y1, y2}, acc -> (y1-y2) + acc end)
+
+    delta = if bar_type == :sum, do: 0, else: start
+    bar_values = if bar_type == :sum do
+		   [{y1, y2}] = bar_values
+		   [{y2 - y_increase, y2}]
+		 else
+		   bar_values
+    end
     
-    {get_svg_bar_rects(start, cat_band, bar_values, labels, plot, fills, event_handlers, opacities), y_increase}
+    {get_svg_bar_rects(delta, cat_band, bar_values, labels, plot, fills, event_handlers, opacities), y_increase}
   end
 
   defp get_bar_event_handlers(%Bridge{mapping: mapping} = plot, category, series_values) do
