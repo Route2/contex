@@ -455,6 +455,12 @@ defimpl Contex.PlotContent, for: Contex.BarChart do
   def set_size(plot, width, height), do: Contex.BarChart.set_size(plot, width, height)
 end
 
+defimpl Contex.PlotContent, for: Contex.Bridge do
+  def to_svg(plot, options), do: Contex.Bridge.to_svg(plot, options)
+  def get_legend_scales(plot), do: Contex.Bridge.get_legend_scales(plot)
+  def set_size(plot, width, height), do: Contex.Bridge.set_size(plot, width, height)
+end
+
 defimpl Contex.PlotContent, for: Contex.PointPlot do
   def to_svg(plot, options), do: Contex.PointPlot.to_svg(plot, options)
   def get_legend_scales(plot), do: Contex.PointPlot.get_legend_scales(plot)

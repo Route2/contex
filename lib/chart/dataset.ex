@@ -285,6 +285,29 @@ defmodule Contex.Dataset do
     end)
   end
 
+    @doc """
+  Calculates the data extents for the sum of the columns supplied.
+
+  It is the equivalent of evaluating the extents of a calculated row where the calculating
+  is the sum of the values identified by column_names.
+  """
+  @spec summed_column_extents(Contex.Dataset.t(), list(column_name())) :: {any(), any()}
+  def summed_column_extents(%Dataset{data: data} = dataset, column_names) do
+    accessors =
+      Enum.map(column_names, fn column_name -> Dataset.value_fn(dataset, column_name) end)
+
+    Enum.reduce(data, 0, fn row, acc ->
+      sum_row_values(row, accessors) + acc
+    end)
+  end
+
+  defp sum_row_values(row, accessors) do
+    Enum.reduce(accessors, 0, fn accessor, acc ->
+      val = accessor.(row)
+      Utils.safe_add(acc, val)
+    end)
+  end
+
   @doc """
   Extracts a list of unique values in the given column.
 
