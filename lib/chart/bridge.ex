@@ -441,14 +441,6 @@ defmodule Contex.Bridge do
       bar_values
       |> Enum.reduce(delta, fn {y1, y2}, acc -> (y1-y2) + acc end)
 
-    # delta = if bar_type == :sum, do: 0, else: start
-    # bar_values = if bar_type == :sum do
-    # 		   [{y1, y2}] = bar_values
-    # 		   [{y2 - y_increase, y2}]
-    # 		 else
-    # 		   bar_values
-    # end
-    
     {get_svg_bar_rects(delta, cat_band, bar_values, labels, plot, fills, event_handlers, opacities), y_increase}
   end
 
