@@ -436,17 +436,18 @@ defmodule Contex.Bridge do
     event_handlers = get_bar_event_handlers(plot, cat_data, series_values)
     opacities = get_bar_opacities(plot, cat_data)
 
+    delta = if bar_type == :sum, do: 0, else: start
     y_increase =
       bar_values
-      |> Enum.reduce(start, fn {y1, y2}, acc -> (y1-y2) + acc end)
+      |> Enum.reduce(delta, fn {y1, y2}, acc -> (y1-y2) + acc end)
 
-    delta = if bar_type == :sum, do: 0, else: start
-    bar_values = if bar_type == :sum do
-		   [{y1, y2}] = bar_values
-		   [{y2 - y_increase, y2}]
-		 else
-		   bar_values
-    end
+    # delta = if bar_type == :sum, do: 0, else: start
+    # bar_values = if bar_type == :sum do
+    # 		   [{y1, y2}] = bar_values
+    # 		   [{y2 - y_increase, y2}]
+    # 		 else
+    # 		   bar_values
+    # end
     
     {get_svg_bar_rects(delta, cat_band, bar_values, labels, plot, fills, event_handlers, opacities), y_increase}
   end
@@ -725,7 +726,7 @@ defmodule Contex.Bridge do
   defp get_overall_value_domain(%Bridge{value_range: {min, max}}, _, _, _), do: {min, max}
 
   defp get_overall_value_domain(_plot, dataset, col_names, :stacked) do
-    max = Dataset.summed_column_extents(dataset, col_names)
+    {_, max} = Dataset.combined_column_extents(dataset, col_names)
     {0, max}
   end
 
