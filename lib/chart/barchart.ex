@@ -706,8 +706,12 @@ defmodule Contex.BarChart do
   defp get_overall_value_domain(%BarChart{value_range: {min, max}}, _, _, _), do: {min, max}
 
   defp get_overall_value_domain(_plot, dataset, col_names, :stacked) do
-    {_, max} = Dataset.combined_column_extents(dataset, col_names)
-    {0, max}
+    {min, max} = Dataset.combined_column_extents(dataset, col_names)
+    if min < 0 do # and max < 0 do
+      {min, max}
+    else
+      {0, max}
+    end
   end
 
   defp get_overall_value_domain(_plot, dataset, col_names, :grouped) do
