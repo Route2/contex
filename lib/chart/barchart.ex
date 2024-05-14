@@ -402,7 +402,9 @@ defmodule Contex.BarChart do
     do: Axis.new_bottom_axis(value_scale) |> Axis.set_offset(get_option(plot, :height))
 
   defp get_value_axis(value_scale, _, plot),
-    do: Axis.new_left_axis(value_scale) |> Axis.set_offset(get_option(plot, :width))
+       do: Axis.new_left_axis(value_scale)
+       |> Axis.set_offset(get_option(plot, :width))
+       |> Axis.set_zero_origin(true)
 
   defp get_svg_bars(%BarChart{mapping: %{column_map: column_map}, dataset: dataset} = plot) do
     series_fill_colours = plot.series_fill_colours

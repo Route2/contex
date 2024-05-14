@@ -430,13 +430,14 @@ defmodule Contex.Bridge do
     bar_type = mapping.accessors.type_col.(row)
     series_values = Enum.map(mapping.accessors.value_cols, fn value_col -> value_col.(row) end)
 
+    delta = if bar_type == :sum, do: 0, else: start
+    
     cat_band = OrdinalScale.get_band(category_scale, cat_data)
     bar_values = prepare_bar_values(series_values, value_scale, get_option(plot, :type))
     labels = Enum.map(series_values, fn val -> Scale.get_formatted_tick(value_scale, val) end)
     event_handlers = get_bar_event_handlers(plot, cat_data, series_values)
     opacities = get_bar_opacities(plot, cat_data)
 
-    delta = if bar_type == :sum, do: 0, else: start
     y_increase =
       bar_values
       |> Enum.reduce(delta, fn {y1, y2}, acc -> (y1-y2) + acc end)
@@ -563,7 +564,9 @@ defmodule Contex.Bridge do
         _ ->
           Enum.zip([bar_values, labels, adjusted_bands])
           |> Enum.map(fn {bar_value, label, adjusted_band} ->
-            get_svg_bar_label(orientation, bar_value, label, adjusted_band, plot)
+	    {x, y} = adjusted_band
+	    {x1, y1} = bar_value
+            get_svg_bar_label(orientation, {x1 - start, y1 - start}, label, {x, y}, plot)
           end)
       end
 
@@ -609,7 +612,7 @@ defmodule Contex.Bridge do
     {text_y, class} =
       case width(bar) > 20 do
         true -> {midpoint(bar), "exc-barlabel-in"}
-        _ -> {bar_start - 10, "exc-barlabel-out"}
+        _ -> {bar_start - 20, "exc-barlabel-out"}
       end
 
     text(text_x, text_y, label, text_anchor: "middle", class: class)

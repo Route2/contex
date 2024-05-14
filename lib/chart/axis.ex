@@ -35,6 +35,7 @@ defmodule Contex.Axis do
   defstruct [
     :scale,
     :orientation,
+    zero_origin: false,
     rotation: 0,
     tick_size_inner: 6,
     tick_size_outer: 6,
@@ -102,22 +103,43 @@ defmodule Contex.Axis do
   end
 
   @doc """
+  Overrides the axis line to always intersect 0 in the range
+  """
+  @spec set_zero_origin(__MODULE__.t(), boolean()) :: __MODULE__.t()
+  def set_zero_origin(%Axis{} = axis, flag) do
+    %{axis | zero_origin: flag}
+  end
+
+  @doc """
   Generates the SVG content for the axis (axis line, tick mark, tick labels). The coordinate system
   will be in the coordinate system of the containing plot (i.e. the range of the `Contex.Scale` specified for the axis)
   """
-  def to_svg(%Axis{scale: scale} = axis) do
+  def to_svg(%Axis{scale: scale, zero_origin: zero_origin} = axis) do
     # Returns IO List for axis. Assumes the containing group handles the transform to the correct location
     axis = %{axis | flip_factor: get_flip_factor(axis.orientation)}
     {range0, range1} = get_adjusted_range(scale)
 
-    [
-      "<g ",
-      get_svg_axis_location(axis),
-      ~s| fill="none" font-size="10" text-anchor="#{get_text_anchor(axis)}">|,
-      ~s|<path class="exc-domain" stroke="#000" d="#{get_svg_axis_line(axis, range0, range1)}"></path>|,
-      get_svg_tickmarks(axis),
-      "</g>"
-    ]
+    domain_to_range_fn = Scale.domain_to_range_fn(scale)
+
+    if zero_origin do
+      [
+	get_svg_line(axis, domain_to_range_fn.(0.0), "exc-domain"),
+	"<g ",
+	get_svg_axis_location(axis),
+	~s| fill="none" font-size="12" text-anchor="#{get_text_anchor(axis)}">|,
+	get_svg_tickmarks(axis),
+	"</g>"
+      ]
+    else
+      [
+	"<g ",
+	get_svg_axis_location(axis),
+	~s| fill="none" font-size="12" text-anchor="#{get_text_anchor(axis)}">|,
+	~s|<path class="exc-domain" stroke="#000" d="#{get_svg_axis_line(axis, range0, range1)}"></path>|,
+	get_svg_tickmarks(axis),
+	"</g>"
+      ]
+    end
   end
 
   @doc """
@@ -138,10 +160,10 @@ defmodule Contex.Axis do
     domain_ticks
     # Don't render first tick as it should be on the axis
     |> Enum.drop(1)
-    |> Enum.map(fn tick -> get_svg_gridline(axis, domain_to_range_fn.(tick)) end)
+    |> Enum.map(fn tick -> get_svg_line(axis, domain_to_range_fn.(tick), "exc-grid") end)
   end
 
-  defp get_svg_gridline(%Axis{offset: offset} = axis, location) do
+  defp get_svg_line(%Axis{offset: offset} = axis, location, class) do
     dim_length = get_tick_dimension(axis)
 
     dim_constant =
@@ -154,7 +176,7 @@ defmodule Contex.Axis do
     location = location + 0.5
 
     [
-      ~s|<line class="exc-grid"|,
+      ~s|<line class="#{class}"|,
       ~s| #{dim_constant}1="#{location}" #{dim_constant}2="#{location}"|,
       ~s| #{dim_length}1="0" #{dim_length}2="#{offset}"></line>|
     ]
