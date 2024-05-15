@@ -39,6 +39,7 @@ defmodule Contex.Bridge do
     :category_scale,
     :value_scale,
     :series_fill_colours,
+    :series_fill_colours_neg,
     :phx_event_handler,
     :value_range,
     :select_item
@@ -61,6 +62,7 @@ defmodule Contex.Bridge do
     padding: 2,
     data_labels: true,
     colour_palette: :default,
+    colour_palette_neg: :default,
     phx_event_handler: nil,
     phx_event_target: nil,
     select_item: nil
@@ -407,14 +409,20 @@ defmodule Contex.Bridge do
 
   defp get_svg_bars(%Bridge{mapping: %{column_map: column_map}, dataset: dataset} = plot) do
     series_fill_colours = plot.series_fill_colours
+    series_fill_colours_neg = plot.series_fill_colours_neg
 
     fills =
       Enum.map(column_map.value_cols, fn column ->
         CategoryColourScale.colour_for_value(series_fill_colours, column)
       end)
 
+    fills_neg =
+      Enum.map(column_map.value_cols, fn column ->
+        CategoryColourScale.colour_for_value(series_fill_colours_neg, column)
+      end)
+
     {bars, _} = dataset.data
-    |> Enum.map_reduce(0, fn row, acc -> get_svg_bar(acc, row, plot, fills) end)
+    |> Enum.map_reduce(0, fn row, acc -> get_svg_bar(acc, row, plot, fills, fills_neg) end)
 
     bars
   end
@@ -424,7 +432,7 @@ defmodule Contex.Bridge do
          row,
          %Bridge{mapping: mapping, category_scale: category_scale, value_scale: value_scale} =
            plot,
-         fills
+         fills, fills_neg
        ) do
     cat_data = mapping.accessors.category_col.(row)
     bar_type = mapping.accessors.type_col.(row)
@@ -442,7 +450,7 @@ defmodule Contex.Bridge do
       bar_values
       |> Enum.reduce(delta, fn {y1, y2}, acc -> (y1-y2) + acc end)
 
-    {get_svg_bar_rects(delta, cat_band, bar_values, labels, plot, fills, event_handlers, opacities), y_increase}
+    {get_svg_bar_rects(delta, cat_band, bar_values, labels, plot, fills, fills_neg, event_handlers, opacities), y_increase}
   end
 
   defp get_bar_event_handlers(%Bridge{mapping: mapping} = plot, category, series_values) do
@@ -533,6 +541,7 @@ defmodule Contex.Bridge do
          labels,
          plot,
          fills,
+	 fills_neg,
          event_handlers,
          opacities
        )
@@ -548,9 +557,11 @@ defmodule Contex.Bridge do
       end)
 
     rects =
-      Enum.zip([bar_values, fills, labels, adjusted_bands, event_handlers, opacities])
-      |> Enum.map(fn {bar_value, fill, label, adjusted_band, event_opts, opacity} ->
+      Enum.zip([bar_values, fills, fills_neg, labels, adjusted_bands, event_handlers, opacities])
+      |> Enum.map(fn {bar_value, fill, fill_neg, label, adjusted_band, event_opts, opacity} ->
         {x, {y1, y2}} = get_bar_rect_coords(orientation, adjusted_band, bar_value)
+	fill = if y1-y2 < 0, do: fill_neg, else: fill
+
         opts = [fill: fill, opacity: opacity] ++ event_opts
 
         rect(x, {y1-start, y2-start}, title(label), opts)
@@ -574,7 +585,7 @@ defmodule Contex.Bridge do
     [rects, texts]
   end
 
-  defp get_svg_bar_rects(_x, _y, _label, _plot, _fill, _event_handlers, _opacities), do: ""
+  defp get_svg_bar_rects(_x, _y, _label, _plot, _fill, _fill_neg, _event_handlers, _opacities), do: ""
 
   defp adjust_cat_band(cat_band, _index, _count, :stacked, _), do: cat_band
 
@@ -706,7 +717,11 @@ defmodule Contex.Bridge do
       CategoryColourScale.new(val_col_names)
       |> CategoryColourScale.set_palette(get_option(plot, :colour_palette))
 
-    %{plot | series_fill_colours: series_fill_colours, mapping: mapping}
+    series_fill_colours_neg =
+      CategoryColourScale.new(val_col_names)
+      |> CategoryColourScale.set_palette(get_option(plot, :colour_palette_neg))
+    
+    %{plot | series_fill_colours: series_fill_colours, series_fill_colours_neg: series_fill_colours_neg, mapping: mapping}
   end
 
   defp get_range(:category, %Bridge{} = plot) do
