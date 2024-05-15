@@ -598,8 +598,13 @@ defmodule Contex.BarChart do
 
     {text_y, class} =
       case width(bar) > 20 do
-        true -> {midpoint(bar), "exc-barlabel-in"}
-        _ -> {bar_start - 10, "exc-barlabel-out"}
+        true -> {midpoint(bar) + 5, "exc-barlabel-in"}
+        _ ->
+	  if bar_start - 25 > 0 do
+	    {bar_start - 25, "exc-barlabel-out"}
+	  else
+	    {bar_start + width(bar) + 25, "exc-barlabel-out"}
+	  end
       end
 
     text(text_x, text_y, label, text_anchor: "middle", class: class)
@@ -673,6 +678,7 @@ defmodule Contex.BarChart do
 
         _ ->
           custom_value_scale
+	  |> struct(custom_tick_formatter: get_option(plot, :custom_value_formatter))
       end
 
     {r_start, r_end} = get_range(:value, plot)
