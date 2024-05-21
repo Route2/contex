@@ -702,6 +702,7 @@ defmodule Contex.Bridge do
 
         _ ->
           custom_value_scale
+          |> struct(custom_tick_formatter: get_option(plot, :custom_value_formatter))
       end
 
     {r_start, r_end} = get_range(:value, plot)
