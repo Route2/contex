@@ -361,8 +361,12 @@ defmodule Contex.PointPlot do
     |> Kernel.struct(rotation: rotation)
   end
 
-  defp get_svg_points(%PointPlot{dataset: dataset} = plot) do
+  defp get_svg_points(%PointPlot{dataset: dataset, mapping: %{accessors: accessors}} = plot) do
     dataset.data
+    |> Enum.sort_by(fn row ->
+      id = accessors.id_col.(row)
+      selected? = id == get_option(plot, :select_item)
+    end)
     |> Enum.map(fn row -> get_svg_point(plot, row) end)
   end
 
@@ -393,10 +397,11 @@ defmodule Contex.PointPlot do
         _ ->
           y = transforms.y.(val)
           fill = if selected?, do: "2563EB", else: transforms.colour.(index, fill_val)
+          radius = if selected?, do: 15, else: 10
 
           base_opts = [class: "exc-pointplot-point", fill: fill, id: id]
 
-          get_svg_point(x, y, base_opts ++ get_point_event_handlers(plot))
+          circle(x, y, radius, base_opts ++ get_point_event_handlers(plot))
       end
     end)
   end
